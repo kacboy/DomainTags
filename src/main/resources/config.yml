@@ -1,0 +1,11 @@
+rules:
+  - host: "mc.marcusblackstock.com"
+    tag: "irl"
+    message: 'tellraw %player% ["Server status, Discord link, and live map view:\n",{"text":"marcusblackstock.com/mc","clickEvent":{"action":"open_url","value":"https://marcusblackstock.com/mc"},"color":"#77cc77"}]'
+  - host: "mc.kacboy.com"
+    tag: ""
+    message: 'tellraw %player% ["Server status, Discord link, and live map view:\n",{"text":"kacboy.com/mc","clickEvent":{"action":"open_url","value":"https://kacboy.com/mc"},"color":"#2670B7"}]'
+
+tag_name: "irl"
+remove_on_unmapped: false
+message_delay_ticks: 20   # ~1 second; increase if needed (e.g., 40 = 2s)

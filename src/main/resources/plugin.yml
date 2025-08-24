@@ -1,0 +1,11 @@
+name: DomainTags
+main: com.example.domaintags.DomainTagsPlugin
+version: 1.0.0
+api-version: '1.21'
+
+commands:
+  domaintags:
+    description: DomainTags management
+    usage: /<command> reload
+    permission: domaintags.reload
+    permission-message: You don't have permission.
