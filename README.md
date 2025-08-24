@@ -37,12 +37,12 @@ This lets you:
 
 | Key                     | Description                                                                                     |
 |-------------------------|-------------------------------------------------------------------------------------------------|
-| `host`                  | The domain/hostname players use to join (e.g., `mc.example.com`). Must be written exactly as typed. |
+| `host`                  | - The domain/hostname players use to join (e.g., `mc.example.com`). Must be written exactly as typed. |
 | `tag`                   | - Non-blank string (e.g. `"team1"`) → ensures that specific scoreboard tag is present. <br> - `""` (blank) → removes **all known rule-tags** from the player. |
-| `message`               | Any console command (e.g., `tellraw`, `say`, LuckPerms command). <br> `%player%` is replaced with the joining player’s name. |
-| `exclusive`             | If `true`, players can only have one rule-tag at a time (switching domains swaps tags). <br> If `false`, players may accumulate multiple rule-tags. |
-| `clear_all_known_on_unmapped` | If `true`, removes all known rule-tags when a player joins with an unmapped host (e.g., direct IP). <br> If `false`, leaves tags unchanged on unmapped hosts. |
-| `message_delay_ticks`   | Delay (in ticks) before running message commands after join. <br> Default: `20` (≈1 second). Prevents “No player was found” errors on login. |
+| `message`               | - Any console command (e.g., `tellraw`, `say`, LuckPerms command). <br> - `%player%` is replaced with the joining player’s name. |
+| `exclusive`             | - If `true`, players can only have one rule-tag at a time (switching domains swaps tags). <br> - If `false`, players may accumulate multiple rule-tags. |
+| `clear_all_known_on_unmapped` | - If `true`, removes all known rule-tags when a player joins with an unmapped host (e.g., direct IP). <br> - If `false`, leaves tags unchanged on unmapped hosts. |
+| `message_delay_ticks`   | - Delay (in ticks) before running message commands after join. <br> - Default: `20` (≈1 second). Prevents “No player was found” errors on login. |
 
 ### Example config.yml
 
