@@ -1,6 +1,6 @@
 # DomainTags
 
-A lightweight [Paper](https://papermc.io/) plugin that assigns **scoreboard tags** and sends **custom messages** to players based on the domain they used to connect.
+A lightweight [Paper](https://papermc.io/) plugin that assigns [**scoreboard tags**](https://minecraft.fandom.com/wiki/Commands/tag) and sends **custom messages** to players based on the domain they used to connect.
 
 This lets you:
 - Distinguish players joining from different hostnames (e.g. `mc.example.com` vs `mc.alt.com`).
