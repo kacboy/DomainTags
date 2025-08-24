@@ -1,3 +1,4 @@
+
 # DomainTags
 
 A lightweight [Paper](https://papermc.io/) plugin that assigns [**scoreboard tags**](https://minecraft.fandom.com/wiki/Commands/tag) and sends **custom messages** to players based on the domain they used to connect.
@@ -40,25 +41,27 @@ rules:
   - host: "mc.example.com"
     tag: "irl"
     message: 'tellraw %player% ["Server status, Discord link, and live map view:\n",{"text":"example.com/mc","clickEvent":{"action":"open_url","value":"https://example.com/mc"},"color":"#77cc77"}]'
-  - host: "mc.alt.com"
+  - host: "play.alt.com"
     tag: ""
     message: 'tellraw %player% ["Server status, Discord link, and live map view:\n",{"text":"alt.com/mc","clickEvent":{"action":"open_url","value":"https://alt.com/mc"},"color":"#2670B7"}]'
 
 tag_name: "irl"
 remove_on_unmapped: false
 message_delay_ticks: 20   # ~1 second; increase if needed (e.g., 40 = 2s)
-
+```
 ### Example using `domains:`
 
 ```yaml
 domains:
-  mc.marcusblackstock.com:
+  mc.example.com:
     tag: "irl"
-    message: 'tellraw %player% ["Server status, Discord link, and live map view:\n",{"text":"marcusblackstock.com/mc","clickEvent":{"action":"open_url","value":"https://marcusblackstock.com/mc"},"color":"#77cc77"}]'
-  mc.kacboy.com:
+    message: 'tellraw %player% ["Server status, Discord link, and live map view:\n",{"text":"example.com/mc","clickEvent":{"action":"open_url","value":"https://example.com/mc"},"color":"#77cc77"}]'
+  play.alt.com:
     tag: ""
-    message: 'tellraw %player% ["Server status, Discord link, and live map view:\n",{"text":"kacboy.com/mc","clickEvent":{"action":"open_url","value":"https://kacboy.com/mc"},"color":"#2670B7"}]'
+    message: 'tellraw %player% ["Server status, Discord link, and live map view:\n",{"text":"alt.com/mc","clickEvent":{"action":"open_url","value":"https://alt.com/mc"},"color":"#2670B7"}]'
 
 tag_name: "irl"
 remove_on_unmapped: false
 message_delay_ticks: 20
+```
+
