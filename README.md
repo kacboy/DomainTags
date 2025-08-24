@@ -33,17 +33,32 @@ This lets you:
 
 ## ⚙️ Configuration
 
-### Example using `rules:`
+### Example using `rules:` (RECOMMENDED)
 
 ```yaml
 rules:
-  - host: "mc.website1.com"
+  - host: "mc.example.com"
     tag: "irl"
-    message: 'tellraw %player% ["Server status, Discord link, and live map view:\n",{"text":"website1.com/mc","clickEvent":{"action":"open_url","value":"https://website1.com/mc"},"color":"#77cc77"}]'
-  - host: "mc.website2.com"
+    message: 'tellraw %player% ["Server status, Discord link, and live map view:\n",{"text":"example.com/mc","clickEvent":{"action":"open_url","value":"https://example.com/mc"},"color":"#77cc77"}]'
+  - host: "mc.alt.com"
     tag: ""
-    message: 'tellraw %player% ["Server status, Discord link, and live map view:\n",{"text":"website2.com/mc","clickEvent":{"action":"open_url","value":"https://website2.com/mc"},"color":"#2670B7"}]'
+    message: 'tellraw %player% ["Server status, Discord link, and live map view:\n",{"text":"alt.com/mc","clickEvent":{"action":"open_url","value":"https://alt.com/mc"},"color":"#2670B7"}]'
 
 tag_name: "irl"
 remove_on_unmapped: false
 message_delay_ticks: 20   # ~1 second; increase if needed (e.g., 40 = 2s)
+
+### Example using `domains:`
+
+```yaml
+domains:
+  mc.marcusblackstock.com:
+    tag: "irl"
+    message: 'tellraw %player% ["Server status, Discord link, and live map view:\n",{"text":"marcusblackstock.com/mc","clickEvent":{"action":"open_url","value":"https://marcusblackstock.com/mc"},"color":"#77cc77"}]'
+  mc.kacboy.com:
+    tag: ""
+    message: 'tellraw %player% ["Server status, Discord link, and live map view:\n",{"text":"kacboy.com/mc","clickEvent":{"action":"open_url","value":"https://kacboy.com/mc"},"color":"#2670B7"}]'
+
+tag_name: "irl"
+remove_on_unmapped: false
+message_delay_ticks: 20
