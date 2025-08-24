@@ -4,9 +4,9 @@
                              http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.example</groupId>
+  <groupId>com.kacboy</groupId>
   <artifactId>domaintags</artifactId>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
   <name>DomainTags</name>
   <description>Add/remove scoreboard tags based on the hostname a player used to join</description>
 

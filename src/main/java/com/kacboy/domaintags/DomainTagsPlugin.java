@@ -1,9 +1,8 @@
-package com.example.domaintags;
+package com.kacboy.domaintags;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -20,17 +19,25 @@ public class DomainTagsPlugin extends JavaPlugin implements Listener {
 
     private FileConfiguration cfg;
 
-    // Rule for a given host: tag=null => treat as UNMAPPED, tag="" => remove, non-blank => add
+    /** Rule for a host.
+     * tag:  non-blank => add this scoreboard tag
+     *       ""        => remove all known rule-tags
+     *       null      => (not used here) reserved
+     */
     static final class Rule {
-        final String tag;
-        final String message; // optional tellraw/command; %player% placeholder supported
+        final String tag;     // specific scoreboard tag for this host; "" means clear-all
+        final String message; // optional command; supports %player%
         Rule(String tag, String message) { this.tag = tag; this.message = message; }
     }
 
-    private static final Rule UNMAPPED = new Rule(null, null); // sentinel (avoid null in maps)
+    private static final Rule UNMAPPED = new Rule(null, null); // sentinel to avoid null map values
 
-    private final Map<String, Rule> rules = new HashMap<>();          // host -> rule (lowercased host)
-    private final Map<UUID, Rule> pending = new ConcurrentHashMap<>(); // uuid -> rule decided at login
+    /** host (lowercased) -> rule */
+    private final Map<String, Rule> rules = new HashMap<>();
+    /** uuid -> rule decided at login (never null; UNMAPPED if not found) */
+    private final Map<UUID, Rule> pending = new ConcurrentHashMap<>();
+    /** all distinct non-blank rule tag names (for exclusive/clear behaviors) */
+    private final Set<String> knownTags = new HashSet<>();
 
     @Override
     public void onEnable() {
@@ -40,14 +47,17 @@ public class DomainTagsPlugin extends JavaPlugin implements Listener {
         getLogger().info("DomainTags enabled");
     }
 
-    /** Reload config + rebuild rules map (used at startup and by /domaintags reload) */
+    /** Reload config and rebuild rules/knownTags (used on startup and /domaintags reload). */
     private void loadRules() {
         reloadConfig();
         cfg = getConfig();
         rules.clear();
+        knownTags.clear();
 
-        // Preferred format: rules: [ {host, tag, message}, ... ]
-        if (cfg.isList("rules")) {
+        // REQUIRED: rules: [ {host, tag, message}, ... ]
+        if (!cfg.isList("rules")) {
+            getLogger().severe("No 'rules' list found in config.yml. The plugin requires the 'rules:' format.");
+        } else {
             List<?> list = cfg.getList("rules");
             if (list != null) {
                 for (Object o : list) {
@@ -57,30 +67,29 @@ public class DomainTagsPlugin extends JavaPlugin implements Listener {
                         String host = optLower(m.get("host"));
                         String tag  = optString(m.get("tag"));
                         String msg  = optString(m.get("message"));
-                        if (host != null) rules.put(host, new Rule(tag, msg));
+                        if (host == null || host.isBlank()) {
+                            getLogger().warning("[DEBUG] Skipping a rule with missing/blank 'host'");
+                            continue;
+                        }
+                        rules.put(host, new Rule(tag, msg));
+                        if (!isBlank(tag)) knownTags.add(tag);
                     }
                 }
             }
         }
 
-        // Back-compat: domains: section (supports dotted keys or nested sections)
-        ConfigurationSection dom = cfg.getConfigurationSection("domains");
-        if (dom != null) {
-            flattenDomains(dom, "", rules);
-        }
-
-        // Debug summary
         if (rules.isEmpty()) {
-            getLogger().warning("[DEBUG] No domain rules found (check config)");
+            getLogger().warning("[DEBUG] No domain rules loaded. Add entries under 'rules:' in config.yml.");
         } else {
             getLogger().info("[DEBUG] Loaded domain mappings:");
             rules.forEach((k, v) ->
                 getLogger().info("  - '" + k + "' -> tag='" + (v.tag == null ? "null" : v.tag) + "' message=" + (isBlank(v.message) ? "none" : "set"))
             );
         }
+        getLogger().info("[DEBUG] Known rule tags: " + (knownTags.isEmpty() ? "(none)" : knownTags));
     }
 
-    /** Decide rule at login (has hostname), store it; don't touch the player yet. */
+    // Decide the rule at login (has hostname); just store it for join.
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerLogin(PlayerLoginEvent event) {
         String raw = event.getHostname();
@@ -92,9 +101,9 @@ public class DomainTagsPlugin extends JavaPlugin implements Listener {
             pending.put(event.getPlayer().getUniqueId(), UNMAPPED);
             return;
         } else {
-            // Normalize: strip proxy extras (\0...), strip :port, lowercase, trim, strip trailing dot.
-            host = raw.split("\0", 2)[0];
-            host = host.split(":", 2)[0].toLowerCase(Locale.ROOT).trim();
+            host = raw.split("\0", 2)[0];                 // strip proxy extras
+            host = host.split(":", 2)[0]                  // strip :port
+                       .toLowerCase(Locale.ROOT).trim();
             if (host.endsWith(".")) host = host.substring(0, host.length() - 1);
             getLogger().info("[DEBUG] Normalized host='" + host + "'");
         }
@@ -104,13 +113,13 @@ public class DomainTagsPlugin extends JavaPlugin implements Listener {
             getLogger().info("[DEBUG] No mapping found for host='" + host + "'");
             rule = UNMAPPED;
         } else {
-            getLogger().info("[DEBUG] Matched rule for host='" + host + "' -> desiredTag='" + rule.tag + "', message=" + (isBlank(rule.message) ? "none" : "set"));
+            getLogger().info("[DEBUG] Matched rule for host='" + host + "' -> tag='" + rule.tag + "', message=" + (isBlank(rule.message) ? "none" : "set"));
         }
 
-        pending.put(event.getPlayer().getUniqueId(), rule); // never null
+        pending.put(event.getPlayer().getUniqueId(), rule);
     }
 
-    /** Apply tag & send message after player fully joins; small delay ensures tellraw works. */
+    // Apply tag & send message after the player fully joins (delay ensures tellraw works).
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerJoin(PlayerJoinEvent event) {
         final Player p = event.getPlayer();
@@ -118,33 +127,33 @@ public class DomainTagsPlugin extends JavaPlugin implements Listener {
         final Rule rule = pending.getOrDefault(uuid, UNMAPPED);
         pending.remove(uuid);
 
-        final String tagName = cfg.getString("tag_name", "irl");
-        final boolean removeOnUnmapped = cfg.getBoolean("remove_on_unmapped", false);
-        final int delayTicks = Math.max(1, cfg.getInt("message_delay_ticks", 20)); // default ~1s
+        final boolean exclusive = cfg.getBoolean("exclusive", true); // only one rule-tag at a time
+        final boolean clearAllKnownOnUnmapped = cfg.getBoolean("clear_all_known_on_unmapped", false);
+        final int delayTicks = Math.max(1, cfg.getInt("message_delay_ticks", 20)); // ~1s default
 
         Bukkit.getScheduler().runTaskLater(this, () -> {
-            boolean had = p.getScoreboardTags().contains(tagName);
-
             if (rule == UNMAPPED || rule.tag == null) {
-                if (removeOnUnmapped && had) {
-                    p.removeScoreboardTag(tagName);
-                    getLogger().info("[DEBUG] (" + p.getName() + ") UNMAPPED -> REMOVED tag '" + tagName + "'");
+                if (clearAllKnownOnUnmapped && !knownTags.isEmpty()) {
+                    int removed = removeAllKnownTags(p, knownTags);
+                    getLogger().info("[DEBUG] (" + p.getName() + ") UNMAPPED -> cleared " + removed + " known tag(s)");
                 } else {
-                    getLogger().info("[DEBUG] (" + p.getName() + ") UNMAPPED -> no tag change (had=" + had + ")");
+                    getLogger().info("[DEBUG] (" + p.getName() + ") UNMAPPED -> no tag changes");
                 }
             } else if (rule.tag.isBlank()) {
-                boolean removed = p.removeScoreboardTag(tagName);
-                if (removed) {
-                    getLogger().info("[DEBUG] (" + p.getName() + ") MAPPED(blank) -> REMOVED tag '" + tagName + "'");
-                } else {
-                    getLogger().info("[DEBUG] (" + p.getName() + ") MAPPED(blank) -> tag already absent");
-                }
+                int removed = removeAllKnownTags(p, knownTags); // explicit "clear-all" rule
+                getLogger().info("[DEBUG] (" + p.getName() + ") MAPPED(blank tag) -> cleared " + removed + " known tag(s)");
             } else {
+                String target = rule.tag;
+                if (exclusive && !knownTags.isEmpty()) {
+                    int removed = removeAllExcept(p, knownTags, target);
+                    if (removed > 0) getLogger().info("[DEBUG] (" + p.getName() + ") EXCLUSIVE -> removed " + removed + " other known tag(s)");
+                }
+                boolean had = p.getScoreboardTags().contains(target);
                 if (!had) {
-                    p.addScoreboardTag(tagName);
-                    getLogger().info("[DEBUG] (" + p.getName() + ") MAPPED('" + rule.tag + "') -> ADDED tag '" + tagName + "'");
+                    p.addScoreboardTag(target);
+                    getLogger().info("[DEBUG] (" + p.getName() + ") ADDED tag '" + target + "'");
                 } else {
-                    getLogger().info("[DEBUG] (" + p.getName() + ") MAPPED('" + rule.tag + "') -> tag already present");
+                    getLogger().info("[DEBUG] (" + p.getName() + ") tag '" + target + "' already present");
                 }
             }
 
@@ -156,7 +165,7 @@ public class DomainTagsPlugin extends JavaPlugin implements Listener {
         }, delayTicks);
     }
 
-    /** /domaintags reload */
+    // /domaintags reload
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (!cmd.getName().equalsIgnoreCase("domaintags")) return false;
@@ -175,30 +184,22 @@ public class DomainTagsPlugin extends JavaPlugin implements Listener {
         return true;
     }
 
-    // ------- helpers -------
+    // ---- helpers ----
 
-    /** Flatten nested "domains:" sections into dotted hostnames in the rules map. */
-    private static void flattenDomains(ConfigurationSection section, String prefix, Map<String, Rule> out) {
-        Set<String> keys = section.getKeys(false);
-
-        boolean hasTag = section.contains("tag") || section.contains("message");
-        if (hasTag && !isBlank(prefix)) {
-            String tag = section.getString("tag", "");
-            String msg = section.getString("message", "");
-            out.put(prefix.toLowerCase(Locale.ROOT), new Rule(tag, msg));
+    private static int removeAllKnownTags(Player p, Set<String> known) {
+        int removed = 0;
+        for (String t : known) {
+            if (p.getScoreboardTags().contains(t) && p.removeScoreboardTag(t)) removed++;
         }
+        return removed;
+    }
 
-        for (String k : keys) {
-            if ("tag".equals(k) || "message".equals(k)) continue;
-            Object val = section.get(k);
-            String nextPrefix = isBlank(prefix) ? k : (prefix + "." + k);
-            if (val instanceof ConfigurationSection) {
-                flattenDomains((ConfigurationSection) val, nextPrefix, out);
-            } else {
-                String tag = section.getString(k, "");
-                out.put(nextPrefix.toLowerCase(Locale.ROOT), new Rule(tag, null));
-            }
+    private static int removeAllExcept(Player p, Set<String> known, String keep) {
+        int removed = 0;
+        for (String t : known) {
+            if (!t.equals(keep) && p.getScoreboardTags().contains(t) && p.removeScoreboardTag(t)) removed++;
         }
+        return removed;
     }
 
     private static boolean isBlank(String s) { return s == null || s.trim().isEmpty(); }
