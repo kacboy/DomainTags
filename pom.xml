@@ -6,25 +6,24 @@
 
   <groupId>com.kacboy</groupId>
   <artifactId>domaintags</artifactId>
-  <version>1.1.0</version>
+  <version>1.2.0</version>
   <name>DomainTags</name>
   <description>Add/remove scoreboard tags based on the hostname a player used to join</description>
 
   <properties>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
-    <paper.api.version>1.20-R0.1-SNAPSHOT</paper.api.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>17</maven.compiler.release>
+    <paper.api.version>1.21.11-R0.1-SNAPSHOT</paper.api.version>
   </properties>
 
   <repositories>
     <repository>
-      <id>papermc-repo</id>
+      <id>papermc</id>
       <url>https://repo.papermc.io/repository/maven-public/</url>
     </repository>
   </repositories>
 
   <dependencies>
-    <!-- Paper API provided by server at runtime -->
     <dependency>
       <groupId>io.papermc.paper</groupId>
       <artifactId>paper-api</artifactId>
@@ -38,21 +37,23 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.11.0</version>
+        <version>3.13.0</version>
         <configuration>
-          <release>17</release>
+          <release>${maven.compiler.release}</release>
         </configuration>
       </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>3.5.0</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals><goal>shade</goal></goals>
-          </execution>
-        </executions>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.2</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+            </manifest>
+          </archive>
+        </configuration>
       </plugin>
     </plugins>
   </build>
